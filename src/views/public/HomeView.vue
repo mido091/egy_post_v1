@@ -282,7 +282,7 @@ onMounted(() => {
               class="h-32 bg-gray-100 dark:bg-gray-700 flex items-center justify-center group-hover:bg-primary-50 dark:group-hover:bg-gray-600 transition-colors"
             >
               <img
-                :src="`/src/assets/image/${index + 1}.jpg`"
+                :src="`/public/${index + 1}.jpg`"
                 :alt="govName"
                 class="w-full h-full object-cover"
               />
