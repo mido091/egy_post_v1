@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import {
@@ -128,14 +128,17 @@ const googleMapsLink = computed(() => {
   return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
 });
 
-// Pre-translate office names for production stability
-// Fallback: if no offices have translations in EN mode, show all with Arabic names
-const visibleMostVisitedOffices = computed(() => {
-  // Explicitly track locale for reactivity in production builds
+// Production-safe translation system using ref + watch
+// This approach guarantees translations update when locale changes
+const visibleMostVisitedOffices = ref([]);
+
+// Function to translate and filter offices
+const updateVisibleOffices = () => {
   const currentLocale = locale.value;
 
   if (!mostVisitedOffices.value || mostVisitedOffices.value.length === 0) {
-    return [];
+    visibleMostVisitedOffices.value = [];
+    return;
   }
 
   // Filter based on locale
@@ -152,12 +155,30 @@ const visibleMostVisitedOffices = computed(() => {
       withTranslations.length > 0 ? withTranslations : mostVisitedOffices.value;
   }
 
-  // Map to add translated names - use currentLocale to ensure reactivity
-  return filtered.map((office) => ({
+  // Map to add translated names - force re-translation on every update
+  visibleMostVisitedOffices.value = filtered.map((office) => ({
     ...office,
     translatedName: translateOfficeName(office.name, currentLocale),
   }));
-});
+};
+
+// Watch locale changes and force re-translation
+watch(
+  locale,
+  () => {
+    updateVisibleOffices();
+  },
+  { immediate: false }
+);
+
+// Watch mostVisitedOffices changes (when data loads)
+watch(
+  mostVisitedOffices,
+  () => {
+    updateVisibleOffices();
+  },
+  { immediate: true }
+);
 
 onMounted(() => {
   fetchOffice();

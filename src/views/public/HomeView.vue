@@ -231,16 +231,17 @@ const heroTitle = computed(() => {
     : "Search for governorates or offices...";
 });
 
-// Filtered and pre-translated most visited offices
-// For EN: only show offices with English translations
-// For AR: show all offices
-// Fallback: if no offices have translations, show all with Arabic names
-const visibleMostVisitedOffices = computed(() => {
-  // Explicitly track locale for reactivity in production builds
+// Production-safe translation system using ref + watch
+// This approach guarantees translations update when locale changes
+const visibleMostVisitedOffices = ref([]);
+
+// Function to translate and filter offices
+const updateVisibleOffices = () => {
   const currentLocale = locale.value;
 
   if (!mostVisitedOffices.value || mostVisitedOffices.value.length === 0) {
-    return [];
+    visibleMostVisitedOffices.value = [];
+    return;
   }
 
   // Filter based on locale
@@ -257,13 +258,30 @@ const visibleMostVisitedOffices = computed(() => {
       withTranslations.length > 0 ? withTranslations : mostVisitedOffices.value;
   }
 
-  // Map to add translated names - use currentLocale to ensure reactivity
-  return filtered.map((office) => ({
+  // Map to add translated names - force re-translation on every update
+  visibleMostVisitedOffices.value = filtered.map((office) => ({
     ...office,
-    // Pre-translate the name to avoid inline function calls in template
     translatedName: translateOfficeName(office.name, currentLocale),
   }));
-});
+};
+
+// Watch locale changes and force re-translation
+watch(
+  locale,
+  () => {
+    updateVisibleOffices();
+  },
+  { immediate: false }
+);
+
+// Watch mostVisitedOffices changes (when data loads)
+watch(
+  mostVisitedOffices,
+  () => {
+    updateVisibleOffices();
+  },
+  { immediate: true }
+);
 
 onMounted(() => {
   fetchGovernorates();
