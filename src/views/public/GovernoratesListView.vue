@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import {
@@ -12,7 +12,7 @@ import {
 import { getMostVisitedGovernorates } from "@/utils/randomSelection";
 import { translateGovernorate } from "@/utils/governorates";
 import api from "@/api";
-import { normalizeText } from "@/utils/textNormalize";
+import { normalizeText, fuzzyMatch } from "@/utils/textNormalize";
 
 const { t, locale } = useI18n();
 const router = useRouter();
@@ -21,6 +21,8 @@ const router = useRouter();
 const governorates = ref({});
 const loading = ref(true);
 const searchQuery = ref("");
+const showSuggestions = ref(false);
+const searchInputRef = ref(null);
 const mostVisitedGovs = ref([]);
 
 // Static Most Visited Offices
@@ -101,15 +103,84 @@ const filteredGovernorates = computed(() => {
 
   return Object.keys(governorates.value).filter((govName) => {
     const translatedName = translateGovernorate(govName, locale.value);
-    const normalizedName = normalizeText(translatedName);
-    const normalizedArabic = normalizeText(govName);
 
-    return normalizedName.includes(query) || normalizedArabic.includes(query);
+    // Check fuzzy match on translated name (primary)
+    const fuzzy = fuzzyMatch(translatedName, query);
+
+    // Check exact/partial match on translated name
+    const nameMatch = normalizeText(translatedName).includes(query);
+
+    // Check exact/partial match on original Arabic name (fallback)
+    const arabicMatch = normalizeText(govName).includes(query);
+
+    return fuzzy || nameMatch || arabicMatch;
   });
 });
 
+// Suggestions for dropdown
+const filteredSuggestions = computed(() => {
+  if (!searchQuery.value || searchQuery.value.length < 1) return [];
+
+  const query = normalizeText(searchQuery.value);
+  const suggestions = [];
+
+  Object.entries(governorates.value).forEach(([govName, offices]) => {
+    const translatedName = translateGovernorate(govName, locale.value);
+
+    // Check fuzzy match on translated name (primary)
+    const fuzzy = fuzzyMatch(translatedName, query);
+
+    // Check exact/partial match on translated name
+    const nameMatch = normalizeText(translatedName).includes(query);
+
+    // Check exact/partial match on original Arabic name (fallback)
+    const arabicMatch = normalizeText(govName).includes(query);
+
+    if (fuzzy || nameMatch || arabicMatch) {
+      suggestions.push({
+        name: govName,
+        count: offices.length,
+        code: govName,
+      });
+    }
+  });
+
+  return suggestions;
+});
+
+const selectSuggestion = (suggestion) => {
+  searchQuery.value = translateGovernorate(suggestion.name, locale.value);
+  showSuggestions.value = false;
+  router.push({ name: "governorate", params: { code: suggestion.code } });
+};
+
+const handleSearchFocus = () => {
+  if (searchQuery.value && filteredSuggestions.value.length > 0) {
+    showSuggestions.value = true;
+  }
+};
+
+const handleSearchInput = () => {
+  if (searchQuery.value && filteredSuggestions.value.length > 0) {
+    showSuggestions.value = true;
+  } else {
+    showSuggestions.value = false;
+  }
+};
+
+const handleClickOutside = (event) => {
+  if (searchInputRef.value && !searchInputRef.value.contains(event.target)) {
+    showSuggestions.value = false;
+  }
+};
+
 onMounted(() => {
   fetchGovernorates();
+  document.addEventListener("click", handleClickOutside);
+});
+
+onUnmounted(() => {
+  document.removeEventListener("click", handleClickOutside);
 });
 </script>
 
@@ -136,9 +207,9 @@ onMounted(() => {
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Search Input -->
         <div class="mb-8">
-          <div class="relative max-w-xl">
+          <div class="relative max-w-xl" ref="searchInputRef">
             <div
-              class="absolute inset-y-0 left-0 rtl:left-auto rtl:right-0 flex items-center pl-3 rtl:pl-0 rtl:pr-3 pointer-events-none"
+              class="absolute inset-y-0 left-0 rtl:left-auto rtl:right-0 flex items-center pl-3 rtl:pl-0 rtl:pr-3 pointer-events-none z-10"
             >
               <MagnifyingGlassIcon class="h-5 w-5 text-gray-400" />
             </div>
@@ -146,8 +217,64 @@ onMounted(() => {
               v-model="searchQuery"
               type="text"
               :placeholder="t('governoratesPage.searchPlaceholder')"
-              class="block w-full pl-10 rtl:pl-3 rtl:pr-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              class="block w-full pl-10 rtl:pl-3 rtl:pr-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent relative z-10"
+              @input="handleSearchInput"
+              @focus="handleSearchFocus"
             />
+
+            <!-- Dropdown Suggestions -->
+            <transition
+              enter-active-class="transition duration-200 ease-out"
+              enter-from-class="opacity-0 translate-y-2 scale-95"
+              enter-to-class="opacity-100 translate-y-0 scale-100"
+              leave-active-class="transition duration-150 ease-in"
+              leave-from-class="opacity-100 translate-y-0 scale-100"
+              leave-to-class="opacity-0 translate-y-2 scale-95"
+            >
+              <div
+                v-if="showSuggestions && filteredSuggestions.length > 0"
+                class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50 max-h-80 overflow-y-auto ring-1 ring-black/5 dark:ring-white/5"
+              >
+                <div class="py-2">
+                  <div
+                    v-for="suggestion in filteredSuggestions"
+                    :key="suggestion.code"
+                    @click="selectSuggestion(suggestion)"
+                    class="px-4 py-3 mx-2 my-1 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors duration-150 flex items-center justify-between group"
+                  >
+                    <div class="flex items-center gap-3">
+                      <div
+                        class="p-2 rounded-lg bg-primary-50 dark:bg-gray-700 text-primary-600 dark:text-primary-400 group-hover:bg-primary-500 group-hover:text-white dark:group-hover:bg-primary-500 dark:group-hover:text-white transition-colors"
+                      >
+                        <MapPinIcon class="h-5 w-5" />
+                      </div>
+                      <span
+                        class="text-gray-900 dark:text-white font-medium group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors"
+                      >
+                        {{ translateGovernorate(suggestion.name, locale) }}
+                      </span>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                      <span
+                        class="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+                      >
+                        {{ suggestion.count }}
+                        {{ t("dashboard.total_offices") }}
+                      </span>
+                      <ArrowRightIcon
+                        v-if="locale === 'en'"
+                        class="h-4 w-4 text-gray-400 group-hover:text-primary-500 transition-colors"
+                      />
+                      <ArrowLeftIcon
+                        v-else
+                        class="h-4 w-4 text-gray-400 group-hover:text-primary-500 transition-colors"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </transition>
           </div>
         </div>
 
