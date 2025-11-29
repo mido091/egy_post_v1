@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import {
@@ -160,13 +160,14 @@ const handleSearchFocus = () => {
   }
 };
 
-const handleSearchInput = () => {
-  if (searchQuery.value && filteredSuggestions.value.length > 0) {
+// Watch for search query changes to update suggestions visibility
+watch(searchQuery, (newVal) => {
+  if (newVal && filteredSuggestions.value.length > 0) {
     showSuggestions.value = true;
   } else {
     showSuggestions.value = false;
   }
-};
+});
 
 const handleClickOutside = (event) => {
   if (searchInputRef.value && !searchInputRef.value.contains(event.target)) {
@@ -218,7 +219,6 @@ onUnmounted(() => {
               type="text"
               :placeholder="t('governoratesPage.searchPlaceholder')"
               class="block w-full pl-10 rtl:pl-3 rtl:pr-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent relative z-10"
-              @input="handleSearchInput"
               @focus="handleSearchFocus"
             />
 
