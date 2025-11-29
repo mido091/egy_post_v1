@@ -11,21 +11,13 @@ import {
 import LeafletMap from "@/components/map/LeafletMap.vue";
 import api from "@/api";
 import { convertXYtoLatLng } from "@/utils/mapUtils";
-import {
-  getMostVisitedOffices,
-  getMostVisitedGovernorates,
-} from "@/utils/randomSelection";
+import { getMostVisitedGovernorates } from "@/utils/randomSelection";
 import { translateGovernorate } from "@/utils/governorates";
-import {
-  translateOfficeName,
-  hasEnglishTranslation,
-} from "@/i18n/mostVisitedOffices";
 
 const route = useRoute();
 const office = ref(null);
 const loading = ref(true);
 const usefulInfo = ref(null);
-const mostVisitedOffices = ref([]);
 const mostVisitedGovs = ref([]);
 const governorates = ref({});
 const { t, locale } = useI18n();
@@ -110,7 +102,6 @@ const fetchOffice = async () => {
     // Fetch all posts to get most visited offices and governorates
     const allPostsResponse = await api.get("/posts");
     governorates.value = allPostsResponse.data;
-    mostVisitedOffices.value = getMostVisitedOffices(allPostsResponse.data);
     mostVisitedGovs.value = getMostVisitedGovernorates(allPostsResponse.data);
   } catch (error) {
     console.error("Failed to fetch office:", error);
@@ -128,57 +119,60 @@ const googleMapsLink = computed(() => {
   return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
 });
 
-// Production-safe translation system using ref + watch
-// This approach guarantees translations update when locale changes
-const visibleMostVisitedOffices = ref([]);
+// Static Most Visited Offices - Bilingual data (no API, no translation needed)
+const staticMostVisitedOffices = [
+  {
+    id: 1,
+    name_ar: "الأفضل",
+    name_en: "Al-Afdal Office",
+    gov_ar: "القاهرة",
+    gov_en: "Cairo",
+  },
+  {
+    id: 2,
+    name_ar: "الحي الثاني - هليوبوليس",
+    name_en: "Second District - Heliopolis",
+    gov_ar: "القاهرة",
+    gov_en: "Cairo",
+  },
+  {
+    id: 3,
+    name_ar: "بانوراما أكتوبر",
+    name_en: "Panorama October",
+    gov_ar: "القاهرة",
+    gov_en: "Cairo",
+  },
+  {
+    id: 4,
+    name_ar: "القطامية",
+    name_en: "Katameya",
+    gov_ar: "القاهرة",
+    gov_en: "Cairo",
+  },
+  {
+    id: 5,
+    name_ar: "أبو رواش",
+    name_en: "Abu Rawash",
+    gov_ar: "الجيزة",
+    gov_en: "Giza",
+  },
+  {
+    id: 6,
+    name_ar: "وحدة مرور حدائق الأهرام",
+    name_en: "Hadayek Al-Ahram Traffic Office",
+    gov_ar: "الجيزة",
+    gov_en: "Giza",
+  },
+];
 
-// Function to translate and filter offices
-const updateVisibleOffices = () => {
-  const currentLocale = locale.value;
-
-  if (!mostVisitedOffices.value || mostVisitedOffices.value.length === 0) {
-    visibleMostVisitedOffices.value = [];
-    return;
-  }
-
-  // Filter based on locale
-  let filtered = mostVisitedOffices.value;
-
-  if (currentLocale === "en") {
-    // In English mode, try to show only offices with English translations
-    const withTranslations = mostVisitedOffices.value.filter((office) =>
-      hasEnglishTranslation(office.name)
-    );
-
-    // If we have translated offices, use them; otherwise show all (fallback)
-    filtered =
-      withTranslations.length > 0 ? withTranslations : mostVisitedOffices.value;
-  }
-
-  // Map to add translated names - force re-translation on every update
-  visibleMostVisitedOffices.value = filtered.map((office) => ({
-    ...office,
-    translatedName: translateOfficeName(office.name, currentLocale),
+// Computed property to get office name based on current locale
+const displayedOffices = computed(() => {
+  return staticMostVisitedOffices.map((office) => ({
+    id: office.id,
+    name: locale.value === "ar" ? office.name_ar : office.name_en,
+    governorate: locale.value === "ar" ? office.gov_ar : office.gov_en,
   }));
-};
-
-// Watch locale changes and force re-translation
-watch(
-  locale,
-  () => {
-    updateVisibleOffices();
-  },
-  { immediate: false, flush: "post" }
-);
-
-// Watch mostVisitedOffices changes (when data loads)
-watch(
-  mostVisitedOffices,
-  () => {
-    updateVisibleOffices();
-  },
-  { immediate: true }
-);
+});
 
 onMounted(() => {
   fetchOffice();
@@ -495,11 +489,11 @@ onMounted(() => {
 
               <div class="grid gap-4">
                 <router-link
-                  v-for="office in visibleMostVisitedOffices"
+                  v-for="office in displayedOffices"
                   :key="`${office.id}-${locale}`"
                   :to="{
                     name: 'office-details',
-                    params: { id: office._id || office.id },
+                    params: { id: office.id },
                   }"
                   class="group bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 dark:border-gray-700 flex items-center justify-between"
                 >
@@ -511,10 +505,10 @@ onMounted(() => {
                     </div>
                     <div>
                       <h3 class="font-bold text-gray-900 dark:text-white">
-                        {{ office.translatedName }}
+                        {{ office.name }}
                       </h3>
                       <p class="text-sm text-gray-500 dark:text-gray-400">
-                        {{ translateGovernorate(office.govName, locale) }}
+                        {{ office.governorate }}
                       </p>
                     </div>
                   </div>
