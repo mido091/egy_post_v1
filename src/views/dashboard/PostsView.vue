@@ -1,20 +1,30 @@
 <template>
   <div class="space-y-6">
-    <div class="flex justify-between items-center">
+    <div class="flex flex-col md:flex-row justify-between items-center gap-4">
       <h1
         class="text-2xl font-bold text-gray-900 dark:text-white tracking-tight"
       >
         {{ $t("posts.title") }}
       </h1>
-      <BaseButton @click="openModal()">
-        <template #default>
-          <span class="mr-2">+</span> {{ $t("posts.add_post") }}
-        </template>
-      </BaseButton>
+      <div class="flex items-center gap-4 w-full md:w-auto">
+        <div class="relative w-full md:w-64">
+          <input
+            v-model="searchQuery"
+            type="text"
+            :placeholder="$t('common.search')"
+            class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+        <BaseButton @click="openModal()">
+          <template #default>
+            <span class="mr-2">+</span> {{ $t("posts.add_post") }}
+          </template>
+        </BaseButton>
+      </div>
     </div>
 
     <BaseCard>
-      <BaseTable :headers="headers" :items="posts" :loading="loading">
+      <BaseTable :headers="headers" :items="filteredPosts" :loading="loading">
         <template #actions="{ item }">
           <div class="flex justify-end space-x-2 rtl:space-x-reverse">
             <BaseButton
@@ -146,7 +156,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { computed, ref, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import adminApi from "@/api/admin";
 import BaseCard from "@/components/ui/BaseCard.vue";
@@ -161,6 +171,22 @@ const { t } = useI18n();
 const uiStore = useUiStore();
 const posts = ref([]);
 const loading = ref(false);
+const searchQuery = ref("");
+
+const filteredPosts = computed(() => {
+  if (!searchQuery.value) return posts.value;
+  const query = searchQuery.value.toLowerCase();
+  return posts.value.filter((post) => {
+    const name = post.name ? post.name.toLowerCase() : "";
+    const nameEn = post.name_en ? post.name_en.toLowerCase() : "";
+    const postalCode = post.postal_code ? post.postal_code.toString() : "";
+    return (
+      name.includes(query) ||
+      nameEn.includes(query) ||
+      postalCode.includes(query)
+    );
+  });
+});
 
 // FIX #3: Governorate dropdown with codes and names
 const governorates = [

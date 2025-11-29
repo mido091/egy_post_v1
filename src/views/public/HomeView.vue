@@ -13,7 +13,10 @@ import {
   getMostVisitedOffices,
 } from "@/utils/randomSelection";
 import { translateGovernorate } from "@/utils/governorates";
-import { translateOfficeName } from "@/i18n/mostVisitedOffices";
+import {
+  translateOfficeName,
+  hasEnglishTranslation,
+} from "@/i18n/mostVisitedOffices";
 import api from "@/api";
 import publicApi from "@/api/public";
 import { normalizeText, fuzzyMatch } from "@/utils/textNormalize";
@@ -228,6 +231,37 @@ const heroTitle = computed(() => {
     : "Search for governorates or offices...";
 });
 
+// Filtered and pre-translated most visited offices
+// For EN: only show offices with English translations
+// For AR: show all offices
+// Fallback: if no offices have translations, show all with Arabic names
+const visibleMostVisitedOffices = computed(() => {
+  if (!mostVisitedOffices.value || mostVisitedOffices.value.length === 0) {
+    return [];
+  }
+
+  // Filter based on locale
+  let filtered = mostVisitedOffices.value;
+
+  if (locale.value === "en") {
+    // In English mode, try to show only offices with English translations
+    const withTranslations = mostVisitedOffices.value.filter((office) =>
+      hasEnglishTranslation(office.name)
+    );
+
+    // If we have translated offices, use them; otherwise show all (fallback)
+    filtered =
+      withTranslations.length > 0 ? withTranslations : mostVisitedOffices.value;
+  }
+
+  // Map to add translated names
+  return filtered.map((office) => ({
+    ...office,
+    // Pre-translate the name to avoid inline function calls in template
+    translatedName: translateOfficeName(office.name, locale.value),
+  }));
+});
+
 onMounted(() => {
   fetchGovernorates();
   fetchAboutContent();
@@ -273,7 +307,12 @@ onUnmounted(() => {
                   v-model="searchQuery"
                   type="text"
                   :placeholder="t('common.search_placeholder')"
-                  class="w-full px-6 py-4 rounded-full text-gray-900 focus:outline-none focus:ring-4 focus:ring-primary-400 shadow-md relative z-10 bg-white text-base /* حجم صغير للموبايل */ md:text-lg /* يرجع للحجم الكبير على الشاشات الأكبر */"
+                  :class="[
+                    'w-full px-6 py-4 rounded-full text-gray-900 focus:outline-none focus:ring-4 focus:ring-primary-400 shadow-md relative z-10 bg-white text-base md:text-lg',
+                    locale === 'en'
+                      ? 'placeholder:text-sm md:placeholder:text-lg'
+                      : '',
+                  ]"
                   @input="handleSearchInput"
                   @focus="handleSearchFocus"
                 />
@@ -503,7 +542,7 @@ onUnmounted(() => {
             </h2>
             <div class="grid gap-4">
               <router-link
-                v-for="office in mostVisitedOffices"
+                v-for="office in visibleMostVisitedOffices"
                 :key="office.id"
                 :to="{
                   name: 'office-details',
@@ -519,7 +558,7 @@ onUnmounted(() => {
                   </div>
                   <div>
                     <h3 class="font-bold text-gray-900 dark:text-white">
-                      {{ translateOfficeName(office.name, locale) }}
+                      {{ office.translatedName }}
                     </h3>
                     <p class="text-sm text-gray-500 dark:text-gray-400">
                       {{ translateGovernorate(office.govName, locale) }}

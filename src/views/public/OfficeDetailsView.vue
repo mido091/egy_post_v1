@@ -16,7 +16,10 @@ import {
   getMostVisitedGovernorates,
 } from "@/utils/randomSelection";
 import { translateGovernorate } from "@/utils/governorates";
-import { translateOfficeName } from "@/i18n/mostVisitedOffices";
+import {
+  translateOfficeName,
+  hasEnglishTranslation,
+} from "@/i18n/mostVisitedOffices";
 
 const route = useRoute();
 const office = ref(null);
@@ -123,6 +126,34 @@ const googleMapsLink = computed(() => {
     parseFloat(office.value.y)
   );
   return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+});
+
+// Pre-translate office names for production stability
+// Fallback: if no offices have translations in EN mode, show all with Arabic names
+const visibleMostVisitedOffices = computed(() => {
+  if (!mostVisitedOffices.value || mostVisitedOffices.value.length === 0) {
+    return [];
+  }
+
+  // Filter based on locale
+  let filtered = mostVisitedOffices.value;
+
+  if (locale.value === "en") {
+    // In English mode, try to show only offices with English translations
+    const withTranslations = mostVisitedOffices.value.filter((office) =>
+      hasEnglishTranslation(office.name)
+    );
+
+    // If we have translated offices, use them; otherwise show all (fallback)
+    filtered =
+      withTranslations.length > 0 ? withTranslations : mostVisitedOffices.value;
+  }
+
+  // Map to add translated names
+  return filtered.map((office) => ({
+    ...office,
+    translatedName: translateOfficeName(office.name, locale.value),
+  }));
 });
 
 onMounted(() => {
@@ -425,7 +456,6 @@ onMounted(() => {
                 </router-link>
               </div>
             </div>
-
             <!-- Most Visited Offices -->
             <div>
               <h2
@@ -441,7 +471,7 @@ onMounted(() => {
 
               <div class="grid gap-4">
                 <router-link
-                  v-for="office in mostVisitedOffices"
+                  v-for="office in visibleMostVisitedOffices"
                   :key="office.id"
                   :to="{
                     name: 'office-details',
@@ -457,7 +487,7 @@ onMounted(() => {
                     </div>
                     <div>
                       <h3 class="font-bold text-gray-900 dark:text-white">
-                        {{ translateOfficeName(office.name, locale) }}
+                        {{ office.translatedName }}
                       </h3>
                       <p class="text-sm text-gray-500 dark:text-gray-400">
                         {{ translateGovernorate(office.govName, locale) }}
