@@ -236,6 +236,9 @@ const heroTitle = computed(() => {
 // For AR: show all offices
 // Fallback: if no offices have translations, show all with Arabic names
 const visibleMostVisitedOffices = computed(() => {
+  // Explicitly track locale for reactivity in production builds
+  const currentLocale = locale.value;
+
   if (!mostVisitedOffices.value || mostVisitedOffices.value.length === 0) {
     return [];
   }
@@ -243,7 +246,7 @@ const visibleMostVisitedOffices = computed(() => {
   // Filter based on locale
   let filtered = mostVisitedOffices.value;
 
-  if (locale.value === "en") {
+  if (currentLocale === "en") {
     // In English mode, try to show only offices with English translations
     const withTranslations = mostVisitedOffices.value.filter((office) =>
       hasEnglishTranslation(office.name)
@@ -254,11 +257,11 @@ const visibleMostVisitedOffices = computed(() => {
       withTranslations.length > 0 ? withTranslations : mostVisitedOffices.value;
   }
 
-  // Map to add translated names
+  // Map to add translated names - use currentLocale to ensure reactivity
   return filtered.map((office) => ({
     ...office,
     // Pre-translate the name to avoid inline function calls in template
-    translatedName: translateOfficeName(office.name, locale.value),
+    translatedName: translateOfficeName(office.name, currentLocale),
   }));
 });
 

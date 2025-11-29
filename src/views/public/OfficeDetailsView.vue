@@ -131,6 +131,9 @@ const googleMapsLink = computed(() => {
 // Pre-translate office names for production stability
 // Fallback: if no offices have translations in EN mode, show all with Arabic names
 const visibleMostVisitedOffices = computed(() => {
+  // Explicitly track locale for reactivity in production builds
+  const currentLocale = locale.value;
+
   if (!mostVisitedOffices.value || mostVisitedOffices.value.length === 0) {
     return [];
   }
@@ -138,7 +141,7 @@ const visibleMostVisitedOffices = computed(() => {
   // Filter based on locale
   let filtered = mostVisitedOffices.value;
 
-  if (locale.value === "en") {
+  if (currentLocale === "en") {
     // In English mode, try to show only offices with English translations
     const withTranslations = mostVisitedOffices.value.filter((office) =>
       hasEnglishTranslation(office.name)
@@ -149,10 +152,10 @@ const visibleMostVisitedOffices = computed(() => {
       withTranslations.length > 0 ? withTranslations : mostVisitedOffices.value;
   }
 
-  // Map to add translated names
+  // Map to add translated names - use currentLocale to ensure reactivity
   return filtered.map((office) => ({
     ...office,
-    translatedName: translateOfficeName(office.name, locale.value),
+    translatedName: translateOfficeName(office.name, currentLocale),
   }));
 });
 
