@@ -1,0 +1,319 @@
+<script setup>
+import { ref, computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
+import {
+  MagnifyingGlassIcon,
+  BuildingOfficeIcon,
+  MapPinIcon,
+  ArrowRightIcon,
+  ArrowLeftIcon,
+} from "@heroicons/vue/24/outline";
+import { getMostVisitedGovernorates } from "@/utils/randomSelection";
+import { translateGovernorate } from "@/utils/governorates";
+import api from "@/api";
+import { normalizeText } from "@/utils/textNormalize";
+
+const { t, locale } = useI18n();
+const router = useRouter();
+
+// Data
+const governorates = ref({});
+const loading = ref(true);
+const searchQuery = ref("");
+const mostVisitedGovs = ref([]);
+
+// Static Most Visited Offices
+const staticMostVisitedOffices = [
+  {
+    id: 1,
+    name_ar: "الأفضل",
+    name_en: "Al-Afdal Office",
+    gov_ar: "القاهرة",
+    gov_en: "Cairo",
+  },
+  {
+    id: 2,
+    name_ar: "الحي الثاني - هليوبوليس",
+    name_en: "Second District - Heliopolis",
+    gov_ar: "القاهرة",
+    gov_en: "Cairo",
+  },
+  {
+    id: 3,
+    name_ar: "بانوراما أكتوبر",
+    name_en: "Panorama October",
+    gov_ar: "القاهرة",
+    gov_en: "Cairo",
+  },
+  {
+    id: 4,
+    name_ar: "القطامية",
+    name_en: "Katameya",
+    gov_ar: "القاهرة",
+    gov_en: "Cairo",
+  },
+  {
+    id: 5,
+    name_ar: "أبو رواش",
+    name_en: "Abu Rawash",
+    gov_ar: "الجيزة",
+    gov_en: "Giza",
+  },
+  {
+    id: 6,
+    name_ar: "وحدة مرور حدائق الأهرام",
+    name_en: "Hadayek Al-Ahram Traffic Office",
+    gov_ar: "الجيزة",
+    gov_en: "Giza",
+  },
+];
+
+const displayedOffices = computed(() => {
+  return staticMostVisitedOffices.map((office) => ({
+    id: office.id,
+    name: locale.value === "ar" ? office.name_ar : office.name_en,
+    governorate: locale.value === "ar" ? office.gov_ar : office.gov_en,
+  }));
+});
+
+// Fetch governorates
+const fetchGovernorates = async () => {
+  try {
+    loading.value = true;
+    const response = await api.get("/posts");
+    governorates.value = { ...response.data };
+    mostVisitedGovs.value = getMostVisitedGovernorates(governorates.value);
+  } catch (error) {
+    console.error("Failed to fetch governorates:", error);
+  } finally {
+    loading.value = false;
+  }
+};
+
+// Filtered governorates based on search
+const filteredGovernorates = computed(() => {
+  if (!searchQuery.value.trim()) {
+    return Object.keys(governorates.value);
+  }
+
+  const query = normalizeText(searchQuery.value);
+
+  return Object.keys(governorates.value).filter((govName) => {
+    const translatedName = translateGovernorate(govName, locale.value);
+    const normalizedName = normalizeText(translatedName);
+    const normalizedArabic = normalizeText(govName);
+
+    return normalizedName.includes(query) || normalizedArabic.includes(query);
+  });
+});
+
+onMounted(() => {
+  fetchGovernorates();
+});
+</script>
+
+<template>
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <!-- Description Section -->
+    <section
+      class="bg-white dark:bg-gray-800 py-12 border-b border-gray-200 dark:border-gray-700"
+    >
+      <div
+        class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center"
+      >
+        <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+          {{ t("governoratesPage.title") }}
+        </h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-3xl">
+          {{ t("governoratesPage.description") }}
+        </p>
+      </div>
+    </section>
+
+    <!-- Search and Governorates List -->
+    <section class="py-12">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Search Input -->
+        <div class="mb-8">
+          <div class="relative max-w-xl">
+            <div
+              class="absolute inset-y-0 left-0 rtl:left-auto rtl:right-0 flex items-center pl-3 rtl:pl-0 rtl:pr-3 pointer-events-none"
+            >
+              <MagnifyingGlassIcon class="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              v-model="searchQuery"
+              type="text"
+              :placeholder="t('governoratesPage.searchPlaceholder')"
+              class="block w-full pl-10 rtl:pl-3 rtl:pr-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+          </div>
+        </div>
+
+        <!-- Loading State -->
+        <div v-if="loading" class="flex justify-center py-12">
+          <div
+            class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"
+          ></div>
+        </div>
+
+        <!-- Governorates Grid -->
+        <div
+          v-else-if="filteredGovernorates.length > 0"
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
+          <router-link
+            v-for="govName in filteredGovernorates"
+            :key="govName"
+            :to="{ name: 'governorate', params: { code: govName } }"
+            class="group bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 dark:border-gray-700"
+          >
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <div class="flex items-center gap-3 mb-2">
+                  <div
+                    class="p-2 rounded-lg bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400"
+                  >
+                    <MapPinIcon class="h-6 w-6" />
+                  </div>
+                  <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                    {{ translateGovernorate(govName, locale) }}
+                  </h3>
+                </div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  {{
+                    t("governoratesPage.officeCount", {
+                      count: governorates[govName]?.length || 0,
+                    })
+                  }}
+                </p>
+                <div
+                  class="flex items-center gap-2 text-primary-600 dark:text-primary-400 font-medium"
+                >
+                  <span>{{ t("governoratesPage.viewDetails") }}</span>
+                  <ArrowRightIcon
+                    v-if="locale === 'en'"
+                    class="h-4 w-4 group-hover:translate-x-1 transition-transform"
+                  />
+                  <ArrowLeftIcon
+                    v-else
+                    class="h-4 w-4 group-hover:-translate-x-1 transition-transform"
+                  />
+                </div>
+              </div>
+            </div>
+          </router-link>
+        </div>
+
+        <!-- No Results -->
+        <div v-else class="text-center py-12">
+          <p class="text-gray-500 dark:text-gray-400 text-lg">
+            {{ t("governoratesPage.noResults") }}
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Most Visited Sections -->
+    <section
+      class="bg-white dark:bg-gray-800 py-16 border-t border-gray-200 dark:border-gray-700"
+    >
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <!-- Most Visited Governorates -->
+          <div>
+            <h2
+              class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3"
+            >
+              <span
+                class="p-2 rounded-lg bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400"
+              >
+                <MapPinIcon class="h-6 w-6" />
+              </span>
+              {{ t("home.mostVisitedGovernorates") }}
+            </h2>
+            <div class="grid gap-4">
+              <router-link
+                v-for="govName in mostVisitedGovs"
+                :key="govName"
+                :to="{ name: 'governorate', params: { code: govName } }"
+                class="group bg-gray-50 dark:bg-gray-700 p-4 rounded-xl hover:shadow-md transition-all duration-200 border border-gray-100 dark:border-gray-600 flex items-center justify-between"
+              >
+                <div class="flex items-center gap-4">
+                  <div
+                    class="h-12 w-12 rounded-lg bg-gray-100 dark:bg-gray-600 flex items-center justify-center text-gray-400 group-hover:bg-primary-50 group-hover:text-primary-500 dark:group-hover:bg-gray-500 dark:group-hover:text-primary-400 transition-colors"
+                  >
+                    <MapPinIcon class="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 class="font-bold text-gray-900 dark:text-white">
+                      {{ translateGovernorate(govName, locale) }}
+                    </h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                      {{ governorates[govName]?.length || 0 }}
+                      {{ t("dashboard.total_offices") }}
+                    </p>
+                  </div>
+                </div>
+                <div
+                  class="text-gray-300 dark:text-gray-500 group-hover:text-primary-500 dark:group-hover:text-primary-400 transform group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-all"
+                >
+                  <ArrowRightIcon v-if="locale === 'en'" class="h-5 w-5" />
+                  <ArrowLeftIcon v-else class="h-5 w-5" />
+                </div>
+              </router-link>
+            </div>
+          </div>
+
+          <!-- Most Visited Offices -->
+          <div>
+            <h2
+              class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3"
+            >
+              <span
+                class="p-2 rounded-lg bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400"
+              >
+                <BuildingOfficeIcon class="h-6 w-6" />
+              </span>
+              {{ t("home.mostVisitedOffices") }}
+            </h2>
+            <div class="grid gap-4">
+              <router-link
+                v-for="office in displayedOffices"
+                :key="`${office.id}-${locale}`"
+                :to="{
+                  name: 'office-details',
+                  params: { id: office.id },
+                }"
+                class="group bg-gray-50 dark:bg-gray-700 p-4 rounded-xl hover:shadow-md transition-all duration-200 border border-gray-100 dark:border-gray-600 flex items-center justify-between"
+              >
+                <div class="flex items-center gap-4">
+                  <div
+                    class="h-12 w-12 rounded-lg bg-primary-50 dark:bg-gray-600 flex items-center justify-center text-primary-600 dark:text-primary-400 group-hover:bg-primary-500 group-hover:text-white dark:group-hover:bg-primary-500 dark:group-hover:text-white transition-colors"
+                  >
+                    <BuildingOfficeIcon class="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 class="font-bold text-gray-900 dark:text-white">
+                      {{ office.name }}
+                    </h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                      {{ office.governorate }}
+                    </p>
+                  </div>
+                </div>
+                <div
+                  class="text-gray-300 dark:text-gray-500 group-hover:text-primary-500 dark:group-hover:text-primary-400 transform group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-all"
+                >
+                  <ArrowRightIcon v-if="locale === 'en'" class="h-5 w-5" />
+                  <ArrowLeftIcon v-else class="h-5 w-5" />
+                </div>
+              </router-link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</template>

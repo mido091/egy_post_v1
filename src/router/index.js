@@ -24,6 +24,11 @@ const router = createRouter({
           component: () => import("@/views/public/OfficeDetailsView.vue"),
         },
         {
+          path: "governorates",
+          name: "governorates-list",
+          component: () => import("@/views/public/GovernoratesListView.vue"),
+        },
+        {
           path: "about-us",
           name: "about-us",
           component: () => import("@/views/public/AboutUs.vue"),

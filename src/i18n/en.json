@@ -45,6 +45,7 @@
   },
   "nav": {
     "home": "Home",
+    "governorates": "Governorates",
     "users": "Users",
     "posts": "Post Offices",
     "settings": "Settings",
@@ -53,6 +54,14 @@
     "disclaimer": "Disclaimer",
     "terms": "Terms & Conditions",
     "contact": "Contact Us"
+  },
+  "governoratesPage": {
+    "title": "Egypt",
+    "description": "Egypt, the land of ancient civilizations spanning thousands of years, is one of the oldest civilizations in human history. Since the time of the Pharaohs, Egypt was a center of science, art, and religion, where the ancient Egyptians built the magnificent pyramids and temples that still bear witness to their engineering and intellectual genius. The Nile River, the lifeline, played a pivotal role in the development of agriculture, economy, and social life in ancient Egypt.\n\nOver the ages, Egypt experienced multiple eras of rule, from the Pharaonic state through the Greek and Roman periods, up to the Islamic conquest that brought Arab and Islamic culture and transformed the country's identity. In the Middle Ages, Egypt became a hub for science, medicine, and philosophy, hosting scholars who contributed to spreading knowledge worldwide.\n\nEgypt also played a prominent role in modern history, being part of the Ottoman Empire, then undergoing European colonization before gaining independence and becoming a strong republic striving for development and progress. Today, Egypt combines its rich historical heritage with a renewed present, making it a destination for tourists and knowledge seekers.\n\nEgypt remains a symbol of human ingenuity and resilience over thousands of years, continuing to inspire the world with its deep history, strategic location, and diverse culture.",
+    "searchPlaceholder": "Search for a governorate...",
+    "viewDetails": "View Details",
+    "officeCount": "{count} office | {count} offices",
+    "noResults": "No results found"
   },
   "social": {
     "title": "Social Links",

@@ -29,6 +29,13 @@
             >
               {{ $t("common.home") }}
             </router-link>
+            <router-link
+              to="/governorates"
+              active-class="border-primary-500 text-gray-900 dark:text-white"
+              class="border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors"
+            >
+              {{ $t("nav.governorates") }}
+            </router-link>
           </div>
         </div>
 
@@ -134,6 +141,15 @@
             class="block px-4 py-3 rounded-lg text-white hover:bg-white/10 transition-colors font-medium"
           >
             {{ $t("common.home") }}
+          </router-link>
+
+          <!-- Governorates -->
+          <router-link
+            to="/governorates"
+            @click="closeMobileMenu"
+            class="block px-4 py-3 rounded-lg text-white hover:bg-white/10 transition-colors font-medium"
+          >
+            {{ $t("nav.governorates") }}
           </router-link>
 
           <!-- Login/Dashboard -->
