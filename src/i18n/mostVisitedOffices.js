@@ -46,6 +46,14 @@ export const mostVisitedOfficesTranslations = {
   مدينتي: "Madinaty",
   الشروق: "El-Shorouk",
 
+  // New additions
+  "الحي المالي": "Financial District",
+  "المدينه العماليه بالماظه": "Almaza Industrial City",
+  "حلميه الزيتون": "Helmeyet El-Zaitoun",
+  "عرب سلام": "Arab Sallam",
+  "ارض الجمعيه": "Ard Al-Gamaya",
+  منديشه: "Mandisha",
+
   // Giza Offices
   الجيزة: "Giza",
   الهرم: "Haram",
