@@ -271,7 +271,7 @@ watch(
   () => {
     updateVisibleOffices();
   },
-  { immediate: false }
+  { immediate: false, flush: "post" }
 );
 
 // Watch mostVisitedOffices changes (when data loads)
@@ -564,7 +564,7 @@ onUnmounted(() => {
             <div class="grid gap-4">
               <router-link
                 v-for="office in visibleMostVisitedOffices"
-                :key="office.id"
+                :key="`${office.id}-${locale}`"
                 :to="{
                   name: 'office-details',
                   params: { id: office._id || office.id },
