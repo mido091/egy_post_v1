@@ -293,7 +293,7 @@ onUnmounted(() => {
     <main class="flex-grow">
       <!-- Hero -->
       <section
-        class="bg-[url('/src/assets/homePage.jpg')] bg-cover bg-center text-white py-20 px-4 text-center relative overflow-hidden z-10"
+        class="bg-[url('/src/assets/homePage.png')] bg-cover bg-center text-white py-20 px-4 text-center relative overflow-hidden z-10"
       >
         <transition
           appear
