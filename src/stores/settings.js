@@ -13,6 +13,7 @@ export const useSettingsStore = defineStore("settings", {
       dark_mode: false,
       google_ads_header: "",
       google_ads_footer: "",
+      google_analytics: "",
     },
     loading: false,
     error: null,

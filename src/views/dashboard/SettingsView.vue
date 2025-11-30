@@ -9,7 +9,9 @@
       <form @submit.prevent="saveSettings" class="space-y-6">
         <!-- General Info Card -->
         <BaseCard :title="$t('settings.general')">
-          <div class="flex flex-row gap-4 justify-between items-center flex-wrap">
+          <div
+            class="flex flex-row gap-4 justify-between items-center flex-wrap"
+          >
             <BaseInput
               v-model="settingsForm.site_name"
               :label="$t('settings.site_name')"
@@ -20,7 +22,7 @@
               :label="$t('settings.site_name_en')"
               required
             />
-            <BaseButton  @click="saveSettings">
+            <BaseButton @click="saveSettings">
               {{ $t("common.save") }}
             </BaseButton>
           </div>
@@ -53,6 +55,30 @@
                 rows="4"
                 class="block w-full rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm focus:border-blue-600 focus:ring-blue-600 sm:text-base transition-colors font-mono text-sm"
               ></textarea>
+            </div>
+
+            <div>
+              <label
+                class="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-2"
+              >
+                GPT Script (Google Publisher Tag)
+              </label>
+              <textarea
+                v-model="settingsForm.google_analytics"
+                rows="6"
+                class="block w-full rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm focus:border-blue-600 focus:ring-blue-600 sm:text-base transition-colors font-mono text-sm"
+                placeholder="<script async src='https://securepubads.g.doublecdn.net/tag/js/gpt.js'></script>
+<script>
+  window.googletag = window.googletag || {cmd: []};
+  googletag.cmd.push(function() {
+    // Define your ad slots here
+  });
+</script>"
+              ></textarea>
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Add your Google Publisher Tag initialization script here. This
+                will be loaded in the &lt;head&gt; section.
+              </p>
             </div>
           </div>
         </BaseCard>
@@ -259,6 +285,7 @@ const settingsForm = ref({
   dark_mode: false,
   google_ads_header: "",
   google_ads_footer: "",
+  google_analytics: "",
   logo: "",
   logo_dark: "",
 });

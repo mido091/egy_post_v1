@@ -2,6 +2,20 @@
   <footer
     class="bg-gray-900 dark:bg-gray-950 border-t border-gray-800 dark:border-gray-900 mt-auto"
   >
+    <!-- Google Ads Footer Section -->
+    <div
+      v-if="settingsStore.settings.google_ads_footer"
+      class="border-b border-gray-800 dark:border-gray-900"
+    >
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div
+          id="div-gpt-ad-footer"
+          class="ad-container footer-ad flex justify-center items-center"
+          v-html="settingsStore.settings.google_ads_footer"
+        ></div>
+      </div>
+    </div>
+
     <div class="w-full py-6 px-4 sm:px-6 lg:px-8">
       <!-- Navigation Links -->
       <div class="mb-4">
